@@ -45,11 +45,11 @@ public class AnimationController : MonoBehaviour
         _animator.SetBool(Constants.Animations.Dance, shouldPlay);
     }
 
-    public void PlayGuitar(bool shouldPlay)
+    public void PlayGuitarAnimation(bool shouldPlay)
     {
         _animator.SetBool(Constants.Animations.GuitarPlay, shouldPlay);
     }
-
+    
     public void DisableAllBools()
     {
         _animator.SetBool(Constants.Animations.Idle, false);
