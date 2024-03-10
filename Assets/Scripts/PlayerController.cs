@@ -81,6 +81,10 @@ public class PlayerController : MonoBehaviour
         {
             myAnimationController.PlayDance(true);
         }
+        else if (Input.GetKeyUp(KeyCode.G))
+        {
+            myAnimationController.PlayGuitar(true);
+        }
         else if(currentMovementSpeed > 0f)
             myAnimationController.PlayWalk(true);
         else
