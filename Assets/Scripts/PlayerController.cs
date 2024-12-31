@@ -17,6 +17,8 @@ public class PlayerController : MonoBehaviour
     private bool rightInput = false;
     private Vector3 myWantedPosition = default;
     private float currentMovementSpeed = 0f;
+    private RaycastHit hit;
+    private bool isPushing = false;
     
     #endregion
 
@@ -74,6 +76,45 @@ public class PlayerController : MonoBehaviour
         //myAnimationController.transform.localRotation = Quaternion.Euler(Vector3.zero);
     }
 
+    private void FixedUpdate()
+    {
+        ThrowRayCast();
+    }
+
+    private void ThrowRayCast()
+    {
+        int layer = 1 << Constants.Layers.Pushing;
+        
+        Vector3 origin = transform.position + new Vector3(0f, 1f, 0f);
+        Vector3 direction = transform.right * myWantedPosition.x; // X direction (right)
+        float rayDistance = 0.5f;
+
+        Debug.DrawRay(origin, direction * rayDistance, Color.green);
+
+        // Perform the raycast
+        if (Physics.Raycast(origin, direction, out RaycastHit hit, rayDistance, layer))
+        {
+            
+            Debug.Log("Start Pushing");
+            isPushing = true;
+            //Debug.DrawRay(origin, direction * rayDistance, Color.green);
+
+
+            
+            //Check if the hit object has a Rigidbody
+            Rigidbody rb = hit.collider.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                // Apply a push force along the X-axis
+                rb.AddForce(Vector3.right * (myWantedPosition.x * 10f), ForceMode.Force);
+            }
+        }
+        else
+        {
+            isPushing = false;
+        }
+    }
+
     private void SetAnimation()
     {
         myAnimationController.DisableAllBools();
@@ -91,6 +132,9 @@ public class PlayerController : MonoBehaviour
         {
             myAnimationController.PlayIdle(true);
         }
+        
+        if(isPushing && currentMovementSpeed > 0f)
+            myAnimationController.PlayPush(true);
     }
 
     private void FlipDirection(bool isTurnRight)

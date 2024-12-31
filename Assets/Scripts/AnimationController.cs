@@ -50,12 +50,18 @@ public class AnimationController : MonoBehaviour
         _animator.SetBool(Constants.Animations.GuitarPlay, shouldPlay);
     }
     
+    public void PlayPush(bool shouldPlay)
+    {
+        _animator.SetBool(Constants.Animations.Push, shouldPlay);
+    }
+    
     public void DisableAllBools()
     {
         _animator.SetBool(Constants.Animations.Idle, false);
         _animator.SetBool(Constants.Animations.Walk, false);
         _animator.SetBool(Constants.Animations.Dance, false);
         _animator.SetBool(Constants.Animations.GuitarPlay, false);
+        _animator.SetBool(Constants.Animations.Push, false);
     }
     
 }

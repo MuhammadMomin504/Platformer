@@ -11,6 +11,14 @@ public partial class Constants
         public const string Dance = "Dance";
         public const string GuitarPlay = "GuitarPlay";
         public const string Hit = "Hit";
+        public const string Push = "Push";
+
+    }
+    
+    public static class Layers
+    {
+        public const int Pushing = 6;
+        public const int Ground = 7;
 
     }
 }
