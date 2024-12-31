@@ -47,12 +47,34 @@ public class FallingDigit : MonoBehaviour
         if (other.gameObject.layer == Constants.Layers.Ground)
         {
             CameraController.instance.TriggerShake();
+            StartCoroutine("FireWorksCoroutine");
 
+            // for (int i = 0; i < particleSystems.Length; i++)
+            // {
+            //     particleSystems[i].Play();
+            // }
+
+        }
+    }
+
+    private IEnumerator FireWorksCoroutine()
+    {
+        int counter = 0;
+        
+        while (counter < 3)
+        {
             for (int i = 0; i < particleSystems.Length; i++)
             {
                 particleSystems[i].Play();
+                particleSystems[i].transform.GetComponent<AudioSource>().Play();
+                yield return new WaitForSeconds(0.5f);
             }
+
+            counter++;
+            yield return new WaitForSeconds(0.75f);
             
         }
+        
     }
+    
 }

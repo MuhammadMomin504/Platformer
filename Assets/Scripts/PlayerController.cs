@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
     private float currentMovementSpeed = 0f;
     private RaycastHit hit;
     private bool isPushing = false;
+    private bool shouldInFrontRotation = false;
     
     #endregion
 
@@ -72,6 +73,9 @@ public class PlayerController : MonoBehaviour
         
         transform.position = Vector3.MoveTowards(transform.position, transform.position + myWantedPosition, Time.deltaTime * currentMovementSpeed);
         SetAnimation();
+        
+        if(shouldInFrontRotation)
+            transform.GetChild(0).transform.rotation = Quaternion.Euler(0f, Mathf.MoveTowards(transform.GetChild(0).transform.localEulerAngles.y, 180f, Time.deltaTime * 100f), 0f);
 
         //myAnimationController.transform.localRotation = Quaternion.Euler(Vector3.zero);
     }
@@ -106,7 +110,7 @@ public class PlayerController : MonoBehaviour
             if (rb != null)
             {
                 // Apply a push force along the X-axis
-                rb.AddForce(Vector3.right * (myWantedPosition.x * 10f), ForceMode.Force);
+                rb.AddForce(Vector3.right * (myWantedPosition.x * 12f), ForceMode.Force);
             }
         }
         else
@@ -121,6 +125,7 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.P))
         {
             myAnimationController.PlayDance(true);
+            shouldInFrontRotation = true;
         }
         else if (Input.GetKeyUp(KeyCode.G))
         {
