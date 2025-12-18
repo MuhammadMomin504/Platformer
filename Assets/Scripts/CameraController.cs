@@ -13,6 +13,13 @@ public class CameraController : MonoBehaviour
     private Vector3 initialPosition;
     private float shakeTime;
     
+    
+    
+    public float rotationSpeed = 0.2f; // Speed of the camera rotation
+
+    private float rotationX = 0f;
+    private float rotationY = 0f;
+    
     private void Awake()
     {
         if(!instance)
@@ -46,6 +53,33 @@ public class CameraController : MonoBehaviour
                 cameraTransform.localPosition = initialPosition;
             }
         }
+        
+        
+        
+        // if (Input.GetMouseButton(0))
+        // {
+        //     float mouseX = Input.GetAxis("Mouse X");
+        //     float mouseY = Input.GetAxis("Mouse Y");
+        //
+        //     rotationX += mouseX * rotationSpeed;
+        //     rotationY -= mouseY * rotationSpeed;
+        //     rotationY = Mathf.Clamp(rotationY, -90f, 90f); // Clamp the vertical rotation to avoid flipping
+        // }
+        //
+        // // Check for touch input
+        // if (Input.touchCount > 0)
+        // {
+        //     Touch touch = Input.GetTouch(0);
+        //     if (touch.phase == TouchPhase.Moved)
+        //     {
+        //         rotationX += touch.deltaPosition.x * rotationSpeed * Time.deltaTime;
+        //         rotationY -= touch.deltaPosition.y * rotationSpeed * Time.deltaTime;
+        //         rotationY = Mathf.Clamp(rotationY, -90f, 90f); // Clamp the vertical rotation to avoid flipping
+        //     }
+        // }
+        //
+        // // Apply rotation to the camera
+        // transform.eulerAngles = new Vector3(rotationY, rotationX, 0f);
     }
     
     public void TriggerShake()
