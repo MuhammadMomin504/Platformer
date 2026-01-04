@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,9 +9,13 @@ using UnityEngine.UI;
 
 public class MenuController : MonoBehaviour
 {
+    public static MenuController instance;
+    
     #region  Exposed Variables
     [SerializeField] private Image uiPanel = default;
+    [SerializeField] private Image gameEndPanel = default;
     [SerializeField] private Image blackOverlay = default;
+    [SerializeField] private TMP_Text ePressText = default;
 
     #endregion
     
@@ -18,11 +24,18 @@ public class MenuController : MonoBehaviour
     
 
     #endregion
-    
+
+    private void Awake()
+    {
+        if (!instance)
+            instance = this;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        ShowEPressText(false);
+        gameEndPanel.gameObject.SetActive(false);
     }
 
     // Update is called once per frame
@@ -74,4 +87,21 @@ public class MenuController : MonoBehaviour
         
         panel.gameObject.SetActive(false);
     }
+    
+    public void ShowEPressText(bool show)
+    {
+        ePressText.gameObject.SetActive(show);
+    }
+    
+    public void ShowGameEndPanel()
+    {
+        gameEndPanel.gameObject.SetActive(true);
+        ShowEPressText(false);
+    }
+    
+    public void PlayAgainButtonCallback()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+    
 }

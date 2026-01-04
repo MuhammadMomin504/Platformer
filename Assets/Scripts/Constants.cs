@@ -19,6 +19,7 @@ public partial class Constants
     {
         public const int Pushable = 6;
         public const int Ground = 7;
+        public const int Player = 8;
         public const int Default = 0;
 
     }

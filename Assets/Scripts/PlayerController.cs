@@ -12,9 +12,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private float jumpHeight = 5f;
     [SerializeField] private float gravityModifier = 1.5f;
-    
-
-
     #endregion
 
 
@@ -62,6 +59,9 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(shouldInFrontRotation)
+            transform.GetChild(0).transform.rotation = Quaternion.Euler(0f, Mathf.MoveTowards(transform.GetChild(0).transform.localEulerAngles.y, 180f, Time.deltaTime * 100f), 0f);
+        
         if (GameplayManager.instance)
         {
             if(GameplayManager.instance.GameState != GameplayManager.GameStates.Play)
@@ -92,9 +92,6 @@ public class PlayerController : MonoBehaviour
         
         SetAnimation();
         
-        // if(shouldInFrontRotation)
-        //     transform.GetChild(0).transform.rotation = Quaternion.Euler(0f, Mathf.MoveTowards(transform.GetChild(0).transform.localEulerAngles.y, 180f, Time.deltaTime * 100f), 0f);
-
         //myAnimationController.transform.localRotation = Quaternion.Euler(Vector3.zero);
     }
 
@@ -204,10 +201,7 @@ public class PlayerController : MonoBehaviour
         }
         
         Vector3 horizontalDir = new Vector3(wantedPosition.x, 0f, 0f);
-        
-        // Vector3 horizontalMove = Vector3.MoveTowards(Vector3.zero, horizontalDir, Time.deltaTime * currentMovementSpeed);
         Vector3 horizontalMove = horizontalDir * currentMovementSpeed * Time.deltaTime;
-        
         
         transform.position += horizontalMove + (verticalMove);
     }
@@ -252,16 +246,8 @@ public class PlayerController : MonoBehaviour
     private void SetAnimation()
     {
         myAnimationController.DisableAllBools();
-        if (Input.GetKeyUp(KeyCode.P))
-        {
-            myAnimationController.PlayDance(true);
-            shouldInFrontRotation = true;
-        }
-        else if (Input.GetKeyUp(KeyCode.G))
-        {
-            myAnimationController.PlayGuitarAnimation(true);
-        }
-        else if(currentMovementSpeed > 0f)
+        
+        if(currentMovementSpeed > 0f)
             myAnimationController.PlayWalk(true);
         else
         {
@@ -278,6 +264,12 @@ public class PlayerController : MonoBehaviour
             playerMesh.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
         else
             playerMesh.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+    }
+    
+    public void PlayDanceAnimation()
+    {
+        myAnimationController.PlayDance(true);
+        shouldInFrontRotation = true;
     }
     
     
