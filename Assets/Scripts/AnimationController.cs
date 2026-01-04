@@ -33,6 +33,7 @@ public class AnimationController : MonoBehaviour
     public void PlayIdle(bool shouldPlay)
     {
         _animator.SetBool(Constants.Animations.Idle, shouldPlay);
+        //
     }
 
     public void PlayWalk(bool shouldPlay)

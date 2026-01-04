@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,6 +11,9 @@ public class CameraController : MonoBehaviour
     public float shakeMagnitude = 0.2f;
     public float dampingSpeed = 1.0f;
 
+    [Header("Camera Follow Settings")]
+    public float followSpeed = 5f; // Speed at which camera follows the player
+
     private Vector3 initialPosition;
     private float shakeTime;
     
@@ -19,6 +23,7 @@ public class CameraController : MonoBehaviour
 
     private float rotationX = 0f;
     private float rotationY = 0f;
+    private Vector3 currentPosition = default;
     
     private void Awake()
     {
@@ -33,6 +38,26 @@ public class CameraController : MonoBehaviour
             cameraTransform = Camera.main.transform;
 
         initialPosition = cameraTransform.localPosition;
+
+        // Initialize current position to camera's starting position
+        currentPosition = transform.position;
+    }
+
+    private void FixedUpdate()
+    {
+        if (GameplayManager.instance && GameplayManager.instance.PlayerTransform != null)
+        {
+            // Calculate target position (follow player on X axis, keep Y and Z fixed)
+            Vector3 targetPosition = GameplayManager.instance.PlayerTransform.position;
+            targetPosition.z = currentPosition.z; // Keep current Z position
+            targetPosition.y = currentPosition.y; // Keep current Y position
+
+            // Smoothly interpolate to target position
+            currentPosition = Vector3.Lerp(currentPosition, targetPosition, followSpeed * Time.deltaTime);
+
+            // Apply the smooth position to the camera
+            transform.position = currentPosition;
+        }
     }
 
     // Update is called once per frame

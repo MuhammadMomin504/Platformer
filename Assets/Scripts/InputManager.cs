@@ -7,21 +7,21 @@ public class InputManager : MonoBehaviour
     public static bool left = false;
     public static bool right = false;
     public static bool backward = false;
-    public static bool forward = false;
+    public static bool jump = false;
     public static bool mouseClicked = false;
     
     
     private bool leftButton = false;
     private bool rightButton = false;
     private bool backwardButton = false;
-    private bool forwardButton = false;
+    private bool jumpButton = false;
     private bool mouseButton = false;
 
 
     private float leftFloat = 0f;
     private float rightFloat = 0f;
     private float backwardFloat = 0f;
-    private float forwardFloat = 0f;
+    private float jumpFloat = 0f;
     private float mouseClickedFloat = 0f;
     
     // Start is called before the first frame update
@@ -49,7 +49,7 @@ public class InputManager : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) )
         {
-            forwardButton = true;
+            jumpButton = true;
         }
         if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S) )
         {
@@ -66,7 +66,7 @@ public class InputManager : MonoBehaviour
         }
         if (Input.GetKeyUp(KeyCode.UpArrow) || Input.GetKeyUp(KeyCode.W))
         {
-            forwardButton = false;
+            jumpButton = false;
         }
         if (Input.GetKeyUp(KeyCode.DownArrow) || Input.GetKeyUp(KeyCode.S))
         {
@@ -84,15 +84,15 @@ public class InputManager : MonoBehaviour
             rightFloat = 1.0f;
         if (backwardButton)
             backwardFloat = 1.0f;
-        if (forwardButton)
-            forwardFloat = 1.0f;
+        if (jumpButton)
+            jumpFloat = 1.0f;
         if (mouseButton)
             mouseButton = false;
         
         left = leftFloat > 0.05f;
         right = rightFloat > 0.05f;
         backward = backwardFloat > 0.05f;
-        forward = forwardFloat > 0.05f;
+        jump = jumpFloat > 0.05f;
         mouseClicked = mouseClickedFloat > 0.05f;
     }
     
@@ -102,14 +102,14 @@ public class InputManager : MonoBehaviour
         leftFloat = Mathf.MoveTowards(leftFloat, 0.0f, Time.deltaTime * 25.0f);
         rightFloat = Mathf.MoveTowards(rightFloat, 0.0f, Time.deltaTime * 25.0f);
         backwardFloat = Mathf.MoveTowards(backwardFloat, 0.0f, Time.deltaTime * 25.0f);
-        forwardFloat = Mathf.MoveTowards(forwardFloat, 0.0f, Time.deltaTime * 25.0f);
+        jumpFloat = Mathf.MoveTowards(jumpFloat, 0.0f, Time.deltaTime * 25.0f);
         mouseClickedFloat = Mathf.MoveTowards(mouseClickedFloat, 0.0f, Time.deltaTime * 25.0f);
 
         if (!Input.anyKey)
         {
             leftButton = false;
             rightButton = false;
-            forwardButton = false;
+            jumpButton = false;
             backwardButton = false;
             mouseButton = false;
         }
