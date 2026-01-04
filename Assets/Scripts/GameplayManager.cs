@@ -5,7 +5,18 @@ using UnityEngine;
 
 public class GameplayManager : MonoBehaviour
 {
+    public enum GameStates
+    {
+        Play, Pause
+    }
     public static GameplayManager instance;
+
+    #region Private Variables
+
+    private GameStates gameState;
+
+    #endregion
+    
 
     #region Exposed Variables
 
@@ -18,6 +29,8 @@ public class GameplayManager : MonoBehaviour
 
     public PlayerController PlayerController => playerController;
     public Transform PlayerTransform => playerController.transform;
+    
+    public GameStates GameState => gameState;
 
     #endregion
     
@@ -27,6 +40,8 @@ public class GameplayManager : MonoBehaviour
     {
         if (!instance)
             instance = this;
+        
+        SetGameState(GameStates.Pause);
     }
 
     // Start is called before the first frame update
@@ -39,5 +54,10 @@ public class GameplayManager : MonoBehaviour
     void Update()
     {
         
+    }
+
+    public void SetGameState(GameStates gameState)
+    {
+        this.gameState = gameState;
     }
 }

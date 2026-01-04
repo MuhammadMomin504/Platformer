@@ -62,6 +62,11 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (GameplayManager.instance)
+        {
+            if(GameplayManager.instance.GameState != GameplayManager.GameStates.Play)
+                return;
+        }
         
         leftInput = InputManager.left;
         rightInput = InputManager.right;
@@ -95,6 +100,11 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (GameplayManager.instance)
+        {
+            if(GameplayManager.instance.GameState != GameplayManager.GameStates.Play)
+                return;
+        }
         
         ThrowRayCast();
         
