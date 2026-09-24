@@ -44,7 +44,7 @@ public class GameplayManager : MonoBehaviour
         if (!instance)
             instance = this;
         
-        SetGameState(GameStates.Pause);
+        SetGameState(GameStates.Play);
     }
 
     // Start is called before the first frame update
