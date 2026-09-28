@@ -1,0 +1,217 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ce35013023b84a189aff7e017bca116, type: 3}
+  m_Name: CharacterCustomisationPotionRushPropLibrary
+  m_EditorClassIdentifier: 
+  Props:
+  - Name: Knot
+    Prefab: {fileID: 5459096750593700895, guid: d77423ccf8b014b0a91c60864fb073e5, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    RootBoneName: 
+    AttachBoneName: Spine1_M
+    LocalPosition: {x: 0.13018654, y: 0.18295181, z: 0.05595908}
+    LocalRotation: {x: -0.25914392, y: 0.28542203, z: 0.6413996, w: 0.66331387}
+    LocalScale: {x: 3.0983078, y: 3.0983078, z: 3.0983076}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: LeatherBag
+    Prefab: {fileID: 7775057196280514922, guid: 150782beec31b4a3da40f0ebbe5799fe, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    RootBoneName: 
+    AttachBoneName: Spine1_M
+    LocalPosition: {x: 0.11935772, y: 0.14108747, z: -0.07635253}
+    LocalRotation: {x: -0.64410293, y: 0.14822483, z: 0.7290774, w: -0.17778347}
+    LocalScale: {x: 51.606445, y: 51.606453, z: 51.606453}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: RopeBelt
+    Prefab: {fileID: 7935640997316320232, guid: 0141e0aa1dbac4f579258b171b164b2c, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    RootBoneName: 
+    AttachBoneName: Spine1_M
+    LocalPosition: {x: -0.022710495, y: 0.022270441, z: 0.009580993}
+    LocalRotation: {x: -0.48530346, y: 0.51427686, z: 0.48530346, w: 0.51427674}
+    LocalScale: {x: 1, y: 1, z: 1}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: CatHat
+    Prefab: {fileID: 2506623247653372620, guid: d73a53aec8a6c408294335aa78597f77, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    RootBoneName: 
+    AttachBoneName: Head_M
+    LocalPosition: {x: 0.0005851541, y: -0.0046098754, z: 0.0012140553}
+    LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+    LocalScale: {x: 1, y: 1, z: 1}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: HairBoy
+    Prefab: {fileID: 2494303641158625918, guid: 66778ea69fa0e48c48b79b7ca1f595ae, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    RootBoneName: 
+    AttachBoneName: Head_M
+    LocalPosition: {x: -0.0017847602, y: 0.0011214865, z: 0.0038804584}
+    LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+    LocalScale: {x: 1, y: 1, z: 1}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: HairGirl
+    Prefab: {fileID: 6008014873603684719, guid: b2d7627c7efac4900995ea41fcfe8680, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    RootBoneName: 
+    AttachBoneName: Head_M
+    LocalPosition: {x: 0.002429252, y: 0.0005079163, z: -0.00044717896}
+    LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+    LocalScale: {x: 1, y: 1, z: 1}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: HatPurple
+    Prefab: {fileID: 3831835473394496469, guid: 098ef809cf0844af7baa143e926678fa, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    RootBoneName: 
+    AttachBoneName: Head_M
+    LocalPosition: {x: 0.0074372357, y: -0.036798246, z: 0.012140267}
+    LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+    LocalScale: {x: 1, y: 1, z: 1}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: HatRed
+    Prefab: {fileID: 5132585221962660851, guid: 90b72919f063648a08476bdefe00d9c9, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    RootBoneName: 
+    AttachBoneName: Head_M
+    LocalPosition: {x: -0.002771958, y: -0.000089020185, z: 0.0037212365}
+    LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+    LocalScale: {x: 1, y: 1, z: 1}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: Robe
+    Prefab: {fileID: 2506623247653372620, guid: 69f1eb6996a014cc1ac1f53205b0bfb5, type: 3}
+    IsSkinnedMesh: 1
+    SkinnedMesh: {fileID: 4300000, guid: 227c822b4f37d4ae0b3fcc5c49b20c2f, type: 2}
+    Materials:
+    - {fileID: 2100000, guid: 4118e063b39a942f2bb15e495fb89745, type: 2}
+    BoneNames:
+    - Root_M
+    - Spine1_M
+    - Spine2_M
+    - Chest_M
+    - Neck_M
+    - Head_M
+    - Scapula_R
+    - Shoulder_R
+    - ShoulderPart1_R
+    - Elbow_R
+    - ElbowPart1_R
+    - Wrist_R
+    - MiddleFinger1_R
+    - MiddleFinger2_R
+    - MiddleFinger3_R
+    - MiddleFinger4_R
+    - ThumbFinger1_R
+    - ThumbFinger2_R
+    - ThumbFinger3_R
+    - ThumbFinger4_R
+    - Scapula_L
+    - Shoulder_L
+    - ShoulderPart1_L
+    - Elbow_L
+    - ElbowPart1_L
+    - Wrist_L
+    - MiddleFinger1_L
+    - MiddleFinger2_L
+    - MiddleFinger3_L
+    - MiddleFinger4_L
+    - ThumbFinger1_L
+    - ThumbFinger2_L
+    - ThumbFinger3_L
+    - ThumbFinger4_L
+    - Hip_R
+    - HipPart1_R
+    - Knee_R
+    - KneePart1_R
+    - Ankle_R
+    - Toes_R
+    - ToesEnd_R
+    - Hip_L
+    - HipPart1_L
+    - Knee_L
+    - KneePart1_L
+    - Ankle_L
+    - Toes_L
+    - ToesEnd_L
+    RootBoneName: Root_M
+    AttachBoneName: Root_M
+    LocalPosition: {x: 0.5181814, y: -0.030561823, z: 0.0115534365}
+    LocalRotation: {x: -0.51912653, y: 0.56408066, z: 0.44288725, w: 0.46494249}
+    LocalScale: {x: 0.99999994, y: 0.99999994, z: 0.99999994}
+    LocalBounds:
+      m_Center: {x: 0.004971385, y: 0.0088235885, z: 0.007879317}
+      m_Extent: {x: 0.49855828, y: 0.34503096, z: 0.44753116}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
