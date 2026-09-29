@@ -29,7 +29,7 @@ namespace CharacterCustomisationPotionRush
         private Vector2 _scroll;
         private GUIStyle _tileStyle;
 
-        [MenuItem("Tools/Character Customisation Potion Rush")]
+        [MenuItem("Tools/Open Character Customisation Tool")]
         public static void Open()
         {
             CharacterCustomisationPotionRushWindow window = GetWindow<CharacterCustomisationPotionRushWindow>("Character Customisation Potion Rush");
