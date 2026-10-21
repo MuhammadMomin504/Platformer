@@ -19,7 +19,21 @@ namespace CharacterCustomisationPotionRush
         public Mesh SkinnedMesh;
         public Material[] Materials = Array.Empty<Material>();
         public string[] BoneNames = Array.Empty<string>();
+
+        /// <summary>
+        /// For every entry in <see cref="BoneNames"/>, the names of that bone's ancestors from the closest
+        /// parent upwards, joined with '/'. It lets a garment fall back to the nearest ancestor a different
+        /// skeleton does have, so a robe never ends up with an unbound (null) bone.
+        /// </summary>
+        public string[] BoneParentNames = Array.Empty<string>();
+
         public string RootBoneName;
+
+        /// <summary>
+        /// The model the garment or prop was extracted from, shown in the editor so several wardrobes can
+        /// live in one library.
+        /// </summary>
+        public string SourceModelName;
         public string AttachBoneName;
         public Vector3 LocalPosition;
         public Quaternion LocalRotation = Quaternion.identity;

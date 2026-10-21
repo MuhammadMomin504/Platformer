@@ -398,6 +398,17 @@ namespace CharacterCustomisationPotionRush
         /// </summary>
         public bool Inherited;
 
+        /// <summary>
+        /// A garment (robe, cape, skirt...) skinned to the skeleton rather than parented rigidly to one
+        /// bone. It is rebound to the character's bones so it deforms with the animation.
+        /// </summary>
+        public bool IsSkinned;
+
+        /// <summary>
+        /// The garment renderer already on the character, when this entry is an inherited skinned prop.
+        /// </summary>
+        public SkinnedMeshRenderer ExistingRenderer;
+
         public bool IsNew
         {
             get { return Existing == null; }
@@ -417,6 +428,12 @@ namespace CharacterCustomisationPotionRush
         public readonly List<MeshSwapPlan> Meshes = new List<MeshSwapPlan>();
         public readonly List<PropSwapPlan> Props = new List<PropSwapPlan>();
         public readonly List<SkinnedMeshRenderer> UnusedRenderers = new List<SkinnedMeshRenderer>();
+
+        /// <summary>
+        /// Skinned garments already worn by the character. They hang off a bone rather than off the mesh
+        /// container, so they must be kept out of the body mesh pass or the swap would delete them.
+        /// </summary>
+        public readonly List<SkinnedMeshRenderer> Garments = new List<SkinnedMeshRenderer>();
         public readonly List<GameObject> UnselectedProps = new List<GameObject>();
         public readonly List<string> Errors = new List<string>();
         public readonly List<string> Warnings = new List<string>();
@@ -522,7 +539,15 @@ namespace CharacterCustomisationPotionRush
                 return plan;
             }
 
-            plan.Bones = new BoneMap(plan.SkeletonRoot, options.IgnoreBoneNamespace, targetRenderers);
+            // A garment is skinned like a body part but parented to a bone, so it must be taken out of the
+            // body pass; otherwise it is seen as a renderer the incoming model does not use and deleted.
+            plan.Garments.AddRange(targetRenderers.Where(r => IsBoneAttachedSkinned(r, plan.SkeletonRoot)));
+            List<SkinnedMeshRenderer> bodyRenderers = targetRenderers
+                .Where(r => !plan.Garments.Contains(r))
+                .ToList();
+
+            plan.Bones = new BoneMap(plan.SkeletonRoot, options.IgnoreBoneNamespace,
+                bodyRenderers.Count > 0 ? bodyRenderers : targetRenderers);
             if (plan.Bones.DuplicateNames.Count > 0)
             {
                 plan.Warnings.Add(string.Format(
@@ -539,7 +564,7 @@ namespace CharacterCustomisationPotionRush
                     Source = source,
                     Name = source.name,
                     BoneCount = source.bones.Length,
-                    Existing = targetRenderers.FirstOrDefault(r => r.name == source.name)
+                    Existing = bodyRenderers.FirstOrDefault(r => r.name == source.name)
                 };
 
                 foreach (Transform bone in source.bones)
@@ -566,7 +591,7 @@ namespace CharacterCustomisationPotionRush
             }
 
             var sourceNames = new HashSet<string>(sourceRenderers.Select(r => r.name));
-            plan.UnusedRenderers.AddRange(targetRenderers.Where(r => !sourceNames.Contains(r.name)));
+            plan.UnusedRenderers.AddRange(bodyRenderers.Where(r => !sourceNames.Contains(r.name)));
 
             if (options.SwapAttachedProps)
             {
@@ -773,6 +798,16 @@ namespace CharacterCustomisationPotionRush
         {
             Dictionary<string, GameObject> attached = FindAttachedProps(plan.SkeletonRoot);
 
+            // Garments already worn by the character count as attached props too, so they can be kept,
+            // rebound to the new skeleton, or taken off from the same tick list as the rigid accessories.
+            foreach (SkinnedMeshRenderer garment in plan.Garments.Where(r => r != null))
+            {
+                if (!attached.ContainsKey(garment.name))
+                {
+                    attached.Add(garment.name, garment.gameObject);
+                }
+            }
+
             // Search the complete model hierarchy, including wrappers such as base_character, because
             // rigid props may be parented to bones beneath those nodes.
             foreach (Transform source in FindRigidPropRoots(plan.Model))
@@ -834,8 +869,14 @@ namespace CharacterCustomisationPotionRush
                         LocalOffset = Matrix4x4.TRS(entry.LocalPosition, entry.LocalRotation, entry.LocalScale),
                         AttachBoneMissing = string.IsNullOrEmpty(entry.AttachBoneName) ||
                                             plan.Bones.Find(entry.AttachBoneName) == null,
-                        Selected = options.IsPropSelected(entry.Name),
+                        // Something the character already wears stays on unless the user unticks it, so a
+                        // robe is not silently dropped the next time the body model is swapped.
+                        Selected = options.IsPropSelected(entry.Name, existingProp != null),
                         Existing = existingProp,
+                        ExistingRenderer = existingProp != null
+                            ? existingProp.GetComponent<SkinnedMeshRenderer>()
+                            : null,
+                        IsSkinned = entry.IsSkinnedMesh,
                         LibraryEntry = entry
                     };
 
@@ -859,7 +900,10 @@ namespace CharacterCustomisationPotionRush
             // to whatever bone the new hierarchy offers.
             foreach (GameObject inherited in attached.Values)
             {
-                plan.Props.Add(BuildInheritedProp(plan, options, inherited.transform));
+                var garment = inherited.GetComponent<SkinnedMeshRenderer>();
+                plan.Props.Add(garment != null
+                    ? BuildInheritedGarment(plan, options, garment)
+                    : BuildInheritedProp(plan, options, inherited.transform));
             }
 
             // Anything the user has unticked is queued for removal rather than silently kept.
@@ -906,6 +950,61 @@ namespace CharacterCustomisationPotionRush
 
             prop.AttachBoneName = anchor != null ? anchor.name : null;
             prop.AttachBoneMissing = anchor == null || plan.Bones.Find(anchor.name) == null;
+
+            return prop;
+        }
+
+        /// <summary>
+        /// A skinned mesh hanging off a bone rather than off the character's mesh container is a garment
+        /// the user added, not a body part of the current model.
+        /// </summary>
+        private static bool IsBoneAttachedSkinned(SkinnedMeshRenderer renderer, Transform skeletonRoot)
+        {
+            if (renderer == null || skeletonRoot == null || renderer.transform.parent == null)
+            {
+                return false;
+            }
+
+            Transform parent = renderer.transform.parent;
+            return parent == skeletonRoot || parent.IsChildOf(skeletonRoot);
+        }
+
+        /// <summary>
+        /// Turns a garment the character already wears into a plan entry so it is kept, re-anchored and
+        /// rebound to whichever skeleton the swap leaves behind.
+        /// </summary>
+        private static PropSwapPlan BuildInheritedGarment(
+            CharacterSwapPlan plan, CharacterSwapOptions options, SkinnedMeshRenderer renderer)
+        {
+            var prop = new PropSwapPlan
+            {
+                Source = renderer.transform,
+                Existing = renderer.gameObject,
+                ExistingRenderer = renderer,
+                Name = renderer.name,
+                Inherited = true,
+                IsSkinned = true,
+                LocalOffset = LocalMatrix(renderer.transform),
+                Selected = options.IsPropSelected(renderer.name, true)
+            };
+
+            Transform anchor = renderer.transform.parent;
+            while (anchor != null && anchor != plan.SkeletonRoot && plan.Bones.Find(anchor.name) == null)
+            {
+                prop.LocalOffset = LocalMatrix(anchor) * prop.LocalOffset;
+                anchor = anchor.parent;
+            }
+
+            prop.AttachBoneName = anchor != null ? anchor.name : null;
+            prop.AttachBoneMissing = anchor == null || plan.Bones.Find(anchor.name) == null;
+
+            foreach (Transform bone in renderer.bones ?? Array.Empty<Transform>())
+            {
+                if (bone != null && plan.Bones.Find(bone.name) == null && !prop.MissingBones.Contains(bone.name))
+                {
+                    prop.MissingBones.Add(bone.name);
+                }
+            }
 
             return prop;
         }
@@ -996,6 +1095,14 @@ namespace CharacterCustomisationPotionRush
                     parent = plan.SkeletonRoot;
                 }
 
+                // A garment inherited from the character keeps its mesh and materials, but its bones are
+                // re-resolved against the skeleton the swap left behind so it still deforms with the body.
+                if (prop.Inherited && prop.IsSkinned && prop.ExistingRenderer != null)
+                {
+                    ReanchorInheritedGarment(plan, prop, parent, options, result, generated);
+                    continue;
+                }
+
                 // A prop inherited from the character is kept as it is and only re-anchored, so its mesh,
                 // materials and transform survive the swap untouched.
                 if (prop.Inherited && prop.Existing != null)
@@ -1059,6 +1166,137 @@ namespace CharacterCustomisationPotionRush
             }
         }
 
+        /// <summary>
+        /// Keeps a garment the character already wears: it is re-parented to the mapped bone, its bone
+        /// array is resolved again by name against the current skeleton and, when anything actually moved,
+        /// its bind poses are rebaked so the cloth still sits on the body and follows the animation.
+        /// </summary>
+        private static void ReanchorInheritedGarment(
+            CharacterSwapPlan plan,
+            PropSwapPlan prop,
+            Transform parent,
+            CharacterSwapOptions options,
+            CharacterSwapResult result,
+            List<KeyValuePair<Mesh, string>> generated)
+        {
+            SkinnedMeshRenderer renderer = prop.ExistingRenderer;
+            Transform garment = renderer.transform;
+
+            Undo.RecordObject(garment, "Attach character garment");
+            if (garment.parent != parent)
+            {
+                Undo.SetTransformParent(garment, parent, "Attach character garment");
+            }
+
+            garment.localPosition = prop.LocalOffset.GetColumn(3);
+            garment.localRotation = prop.LocalOffset.rotation;
+            garment.localScale = prop.LocalOffset.lossyScale;
+
+            bool rebound;
+            Transform[] bones = ResolveGarmentBones(plan, renderer.bones, parent, out rebound);
+
+            Transform rootBone = renderer.rootBone != null
+                ? plan.Bones.Find(renderer.rootBone.name)
+                : null;
+            if (rootBone == null)
+            {
+                rootBone = parent;
+            }
+
+            Undo.RecordObject(renderer, "Attach character garment");
+
+            // Untouched bones and an unchanged rest pose mean the existing bind poses are still correct;
+            // rebaking them while the character is posed would bake that pose into the cloth.
+            if (rebound || plan.EffectiveFit == RigFitMode.AdoptModelRestPose)
+            {
+                renderer.sharedMesh = RebindMesh(plan, renderer.sharedMesh, bones, garment.localToWorldMatrix,
+                    options, generated);
+                result.MeshesRebaked++;
+            }
+
+            renderer.bones = bones;
+            renderer.rootBone = rootBone;
+            SetLayerRecursively(renderer.gameObject, parent.gameObject.layer);
+
+            result.PropsAttached++;
+        }
+
+        /// <summary>
+        /// Matches a garment's bones onto the character's skeleton by name. A bone the skeleton does not
+        /// have falls back to the closest ancestor it does have, so the cloth is never left with an unbound
+        /// bone, which Unity would render as a collapsed mesh at the origin.
+        /// </summary>
+        private static Transform[] ResolveGarmentBones(
+            CharacterSwapPlan plan, Transform[] source, Transform fallback, out bool changed)
+        {
+            changed = false;
+            source = source ?? Array.Empty<Transform>();
+
+            var bones = new Transform[source.Length];
+            for (int i = 0; i < source.Length; i++)
+            {
+                Transform original = source[i];
+                Transform bone = original != null ? plan.Bones.Find(original.name) : null;
+
+                for (Transform ancestor = original != null ? original.parent : null;
+                     bone == null && ancestor != null;
+                     ancestor = ancestor.parent)
+                {
+                    bone = plan.Bones.Find(ancestor.name);
+                }
+
+                if (bone == null)
+                {
+                    bone = original != null && plan.SkeletonRoot != null && original.IsChildOf(plan.SkeletonRoot)
+                        ? original
+                        : fallback;
+                }
+
+                bones[i] = bone;
+                changed |= bone != original;
+            }
+
+            return bones;
+        }
+
+        /// <summary>
+        /// Copies a garment mesh and rebinds it to the given bones in their current rest pose, so the cloth
+        /// stays exactly where it is on the body while following the new skeleton from now on.
+        /// </summary>
+        private static Mesh RebindMesh(
+            CharacterSwapPlan plan,
+            Mesh source,
+            Transform[] bones,
+            Matrix4x4 meshToWorld,
+            CharacterSwapOptions options,
+            List<KeyValuePair<Mesh, string>> generated)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            Mesh mesh = UnityEngine.Object.Instantiate(source);
+            mesh.name = string.Format("{0}__on_{1}", StripRebindSuffix(source.name), plan.Target.name);
+
+            Matrix4x4[] bindposes = source.bindposes;
+            for (int i = 0; i < bindposes.Length; i++)
+            {
+                if (i < bones.Length && bones[i] != null)
+                {
+                    bindposes[i] = bones[i].worldToLocalMatrix * meshToWorld;
+                }
+            }
+
+            mesh.bindposes = bindposes;
+
+            generated.Add(new KeyValuePair<Mesh, string>(
+                mesh,
+                string.Format("{0}/{1}.asset", options.GeneratedMeshFolder.TrimEnd('/'), Sanitise(mesh.name))));
+
+            return mesh;
+        }
+
         private static void ApplyLibrarySkinnedProp(
             CharacterSwapPlan plan,
             PropSwapPlan prop,
@@ -1079,31 +1317,29 @@ namespace CharacterCustomisationPotionRush
                 renderer = instance.AddComponent<SkinnedMeshRenderer>();
             }
 
+            // Every bone is resolved to something real: the same name where the skeleton has it, otherwise
+            // the nearest ancestor from the rig the garment was authored on. A null bone would make Unity
+            // collapse the cloth to the origin.
             Transform[] bones = new Transform[entry.BoneNames != null ? entry.BoneNames.Length : 0];
             for (int i = 0; i < bones.Length; i++)
             {
-                bones[i] = plan.Bones.Find(entry.BoneNames[i]);
+                string ancestors = entry.BoneParentNames != null && i < entry.BoneParentNames.Length
+                    ? entry.BoneParentNames[i]
+                    : null;
+                bones[i] = ResolveLibraryBone(plan, entry.BoneNames[i], ancestors, parent);
             }
 
             Transform rootBone = !string.IsNullOrEmpty(entry.RootBoneName)
                 ? plan.Bones.Find(entry.RootBoneName)
-                : parent;
-
-            Mesh mesh = UnityEngine.Object.Instantiate(entry.SkinnedMesh);
-            mesh.name = string.Format("{0}__on_{1}", entry.SkinnedMesh.name, plan.Target.name);
-            Matrix4x4 meshToWorld = parent.localToWorldMatrix * Matrix4x4.TRS(
-                prop.LocalOffset.GetColumn(3),
-                prop.LocalOffset.rotation,
-                prop.LocalOffset.lossyScale);
-            Matrix4x4[] bindposes = new Matrix4x4[mesh.bindposes.Length];
-            for (int i = 0; i < bindposes.Length; i++)
+                : null;
+            if (rootBone == null)
             {
-                bindposes[i] = i < bones.Length && bones[i] != null
-                    ? bones[i].worldToLocalMatrix * meshToWorld
-                    : mesh.bindposes[i];
+                rootBone = parent;
             }
 
-            mesh.bindposes = bindposes;
+            Matrix4x4 meshToWorld = instance.transform.localToWorldMatrix;
+            Mesh mesh = RebindMesh(plan, entry.SkinnedMesh, bones, meshToWorld, options, generated);
+
             renderer.sharedMesh = mesh;
             renderer.bones = bones;
             renderer.rootBone = rootBone;
@@ -1112,10 +1348,44 @@ namespace CharacterCustomisationPotionRush
             renderer.quality = entry.Quality;
             renderer.updateWhenOffscreen = entry.UpdateWhenOffscreen;
             renderer.skinnedMotionVectors = entry.SkinnedMotionVectors;
+        }
 
-            generated.Add(new KeyValuePair<Mesh, string>(
-                mesh,
-                string.Format("{0}/{1}.asset", options.GeneratedMeshFolder.TrimEnd('/'), Sanitise(mesh.name))));
+        /// <summary>
+        /// Finds the bone a library garment should bind to, walking the ancestor chain recorded when the
+        /// garment was extracted so a different skeleton still gets a sensible parent joint.
+        /// </summary>
+        private static Transform ResolveLibraryBone(
+            CharacterSwapPlan plan, string boneName, string ancestorChain, Transform fallback)
+        {
+            Transform bone = !string.IsNullOrEmpty(boneName) ? plan.Bones.Find(boneName) : null;
+            if (bone != null)
+            {
+                return bone;
+            }
+
+            if (!string.IsNullOrEmpty(ancestorChain))
+            {
+                foreach (string ancestor in ancestorChain.Split('/'))
+                {
+                    bone = plan.Bones.Find(ancestor);
+                    if (bone != null)
+                    {
+                        return bone;
+                    }
+                }
+            }
+
+            return fallback;
+        }
+
+        /// <summary>
+        /// Drops an earlier "__on_&lt;character&gt;" suffix so re-swapping a garment does not keep stacking
+        /// the names of every character it has been worn by.
+        /// </summary>
+        private static string StripRebindSuffix(string meshName)
+        {
+            int marker = meshName.IndexOf("__on_", StringComparison.Ordinal);
+            return marker > 0 ? meshName.Substring(0, marker) : meshName;
         }
 
         private static void SetLayerRecursively(GameObject root, int layer)
@@ -1262,7 +1532,8 @@ namespace CharacterCustomisationPotionRush
             foreach (PropSwapPlan prop in plan.Props.Where(p => p.Selected && p.MissingBones.Count > 0))
             {
                 plan.Warnings.Add(string.Format(
-                    "Skinned prop '{0}' has {1} bone(s) that could not be matched on the target: {2}.",
+                    "Skinned item '{0}' uses {1} bone(s) the character's skeleton does not have: {2}. " +
+                    "They will be bound to the closest parent bone instead.",
                     prop.Name,
                     prop.MissingBones.Count,
                     string.Join(", ", prop.MissingBones.ToArray())));
@@ -1635,6 +1906,24 @@ namespace CharacterCustomisationPotionRush
                 // Recomputes localBounds against the character's own skeleton rather than the model's.
                 mesh.Existing.updateWhenOffscreen = true;
                 mesh.Existing.updateWhenOffscreen = false;
+            }
+
+            // Garments are bound to the same skeleton, so their bounds are stale for the same reason.
+            foreach (PropSwapPlan prop in plan.Props)
+            {
+                SkinnedMeshRenderer renderer = prop.ExistingRenderer;
+                if (renderer == null && prop.Existing != null)
+                {
+                    renderer = prop.Existing.GetComponent<SkinnedMeshRenderer>();
+                }
+
+                if (renderer == null || renderer.updateWhenOffscreen)
+                {
+                    continue;
+                }
+
+                renderer.updateWhenOffscreen = true;
+                renderer.updateWhenOffscreen = false;
             }
         }
     }

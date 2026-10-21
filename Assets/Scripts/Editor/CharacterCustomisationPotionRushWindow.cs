@@ -22,6 +22,7 @@ namespace CharacterCustomisationPotionRush
         [SerializeField] private bool _swapOnSelect = true;
         [SerializeField] private bool _showOptions = true;
         [SerializeField] private bool _showProps = true;
+        [SerializeField] private GameObject _clothingModel;
 
         private readonly List<GameObject> _library = new List<GameObject>();
         private CharacterSwapPlan _plan;
@@ -329,13 +330,17 @@ namespace CharacterCustomisationPotionRush
                 }
             }
 
+            DrawClothingImport();
+
             CharacterSwapPlan plan = CurrentPlan();
             if (plan.Props.Count == 0)
             {
                 EditorGUILayout.HelpBox(
                     _model == null
                         ? "Pick a model to see the props it offers."
-                        : string.Format("Neither '{0}' nor the character has any bone attached props.", _model.name),
+                        : string.Format(
+                            "Neither '{0}' nor the character has any props or clothing. Add a garment with the field above.",
+                            _model.name),
                     MessageType.Info);
                 return;
             }
@@ -365,11 +370,7 @@ namespace CharacterCustomisationPotionRush
                     {
                         EditorGUI.BeginChangeCheck();
                         bool selected = EditorGUILayout.ToggleLeft(
-                            new GUIContent(
-                                prop.Inherited ? string.Format("{0}  (kept)", prop.Name) : prop.Name,
-                                prop.Inherited
-                                    ? string.Format("Already on the character. Attaches to '{0}'.", prop.AttachBoneName)
-                                    : string.Format("Attaches to '{0}'.", prop.AttachBoneName)),
+                            new GUIContent(DescribeProp(prop), DescribePropTooltip(prop)),
                             prop.Selected);
                         if (EditorGUI.EndChangeCheck())
                         {
@@ -386,6 +387,52 @@ namespace CharacterCustomisationPotionRush
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Adds clothing, such as a robe, to the library. Its skinned mesh, materials and bone names are
+        /// recorded so it can be bound to whichever character skeleton is being customised.
+        /// </summary>
+        private void DrawClothingImport()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _clothingModel = (GameObject)EditorGUILayout.ObjectField(
+                    new GUIContent("Add clothing", "A model or prefab holding the garment's Skinned Mesh Renderer, for example a robe."),
+                    _clothingModel, typeof(GameObject), true);
+
+                using (new EditorGUI.DisabledScope(_clothingModel == null))
+                {
+                    if (GUILayout.Button("Add", GUILayout.Width(60f)))
+                    {
+                        _propLibrary = CharacterCustomisationPotionRushPropExtractor.AddSkinnedGarments(
+                            _propLibrary, _clothingModel);
+                        _plan = null;
+                    }
+                }
+            }
+        }
+
+        private static string DescribeProp(PropSwapPlan prop)
+        {
+            string kind = prop.IsSkinned ? "  (clothing)" : string.Empty;
+            return prop.Inherited
+                ? string.Format("{0}{1}  (kept)", prop.Name, kind)
+                : string.Format("{0}{1}", prop.Name, kind);
+        }
+
+        private static string DescribePropTooltip(PropSwapPlan prop)
+        {
+            if (prop.IsSkinned)
+            {
+                return string.Format(
+                    "Skinned to the character's bones from '{0}', so it deforms with the animation.",
+                    prop.AttachBoneName);
+            }
+
+            return prop.Inherited
+                ? string.Format("Already on the character. Attaches to '{0}'.", prop.AttachBoneName)
+                : string.Format("Attaches to '{0}'.", prop.AttachBoneName);
         }
 
         private void SelectAllProps(CharacterSwapPlan plan, bool selected)
@@ -438,7 +485,7 @@ namespace CharacterCustomisationPotionRush
             foreach (PropSwapPlan prop in plan.Props.Where(p => p.Selected))
             {
                 EditorGUILayout.LabelField(
-                    new GUIContent(string.Format("{0}  (prop)", prop.Name)),
+                    new GUIContent(string.Format("{0}  ({1})", prop.Name, prop.IsSkinned ? "clothing" : "prop")),
                     new GUIContent(string.Format("attaches to {0}", prop.AttachBoneMissing
                         ? string.Format("{0} (missing)", prop.AttachBoneName)
                         : prop.AttachBoneName)),

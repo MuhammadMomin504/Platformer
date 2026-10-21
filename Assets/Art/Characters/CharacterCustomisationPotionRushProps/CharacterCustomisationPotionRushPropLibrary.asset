@@ -19,7 +19,9 @@ MonoBehaviour:
     SkinnedMesh: {fileID: 0}
     Materials: []
     BoneNames: []
+    BoneParentNames: []
     RootBoneName: 
+    SourceModelName: character_animations_01
     AttachBoneName: Spine1_M
     LocalPosition: {x: 0.13018654, y: 0.18295181, z: 0.05595908}
     LocalRotation: {x: -0.25914392, y: 0.28542203, z: 0.6413996, w: 0.66331387}
@@ -36,7 +38,9 @@ MonoBehaviour:
     SkinnedMesh: {fileID: 0}
     Materials: []
     BoneNames: []
+    BoneParentNames: []
     RootBoneName: 
+    SourceModelName: character_animations_01
     AttachBoneName: Spine1_M
     LocalPosition: {x: 0.11935772, y: 0.14108747, z: -0.07635253}
     LocalRotation: {x: -0.64410293, y: 0.14822483, z: 0.7290774, w: -0.17778347}
@@ -53,7 +57,9 @@ MonoBehaviour:
     SkinnedMesh: {fileID: 0}
     Materials: []
     BoneNames: []
+    BoneParentNames: []
     RootBoneName: 
+    SourceModelName: character_animations_01
     AttachBoneName: Spine1_M
     LocalPosition: {x: -0.022710495, y: 0.022270441, z: 0.009580993}
     LocalRotation: {x: -0.48530346, y: 0.51427686, z: 0.48530346, w: 0.51427674}
@@ -70,7 +76,9 @@ MonoBehaviour:
     SkinnedMesh: {fileID: 0}
     Materials: []
     BoneNames: []
+    BoneParentNames: []
     RootBoneName: 
+    SourceModelName: character_animations_01
     AttachBoneName: Head_M
     LocalPosition: {x: 0.0005851541, y: -0.0046098754, z: 0.0012140553}
     LocalRotation: {x: 0, y: -0, z: -0, w: 1}
@@ -87,7 +95,9 @@ MonoBehaviour:
     SkinnedMesh: {fileID: 0}
     Materials: []
     BoneNames: []
+    BoneParentNames: []
     RootBoneName: 
+    SourceModelName: character_animations_01
     AttachBoneName: Head_M
     LocalPosition: {x: -0.0017847602, y: 0.0011214865, z: 0.0038804584}
     LocalRotation: {x: 0, y: -0, z: -0, w: 1}
@@ -104,7 +114,9 @@ MonoBehaviour:
     SkinnedMesh: {fileID: 0}
     Materials: []
     BoneNames: []
+    BoneParentNames: []
     RootBoneName: 
+    SourceModelName: character_animations_01
     AttachBoneName: Head_M
     LocalPosition: {x: 0.002429252, y: 0.0005079163, z: -0.00044717896}
     LocalRotation: {x: 0, y: -0, z: -0, w: 1}
@@ -121,7 +133,9 @@ MonoBehaviour:
     SkinnedMesh: {fileID: 0}
     Materials: []
     BoneNames: []
+    BoneParentNames: []
     RootBoneName: 
+    SourceModelName: character_animations_01
     AttachBoneName: Head_M
     LocalPosition: {x: 0.0074372357, y: -0.036798246, z: 0.012140267}
     LocalRotation: {x: 0, y: -0, z: -0, w: 1}
@@ -138,7 +152,9 @@ MonoBehaviour:
     SkinnedMesh: {fileID: 0}
     Materials: []
     BoneNames: []
+    BoneParentNames: []
     RootBoneName: 
+    SourceModelName: character_animations_01
     AttachBoneName: Head_M
     LocalPosition: {x: -0.002771958, y: -0.000089020185, z: 0.0037212365}
     LocalRotation: {x: 0, y: -0, z: -0, w: 1}
@@ -204,7 +220,57 @@ MonoBehaviour:
     - Ankle_L
     - Toes_L
     - ToesEnd_L
+    BoneParentNames:
+    - DeformationSystem/character_animations_01
+    - Root_M/DeformationSystem/character_animations_01
+    - Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Neck_M/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Wrist_R/ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - MiddleFinger1_R/Wrist_R/ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - MiddleFinger2_R/MiddleFinger1_R/Wrist_R/ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - MiddleFinger3_R/MiddleFinger2_R/MiddleFinger1_R/Wrist_R/ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Wrist_R/ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ThumbFinger1_R/Wrist_R/ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ThumbFinger2_R/ThumbFinger1_R/Wrist_R/ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ThumbFinger3_R/ThumbFinger2_R/ThumbFinger1_R/Wrist_R/ElbowPart1_R/Elbow_R/ShoulderPart1_R/Shoulder_R/Scapula_R/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Wrist_L/ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - MiddleFinger1_L/Wrist_L/ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - MiddleFinger2_L/MiddleFinger1_L/Wrist_L/ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - MiddleFinger3_L/MiddleFinger2_L/MiddleFinger1_L/Wrist_L/ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Wrist_L/ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ThumbFinger1_L/Wrist_L/ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ThumbFinger2_L/ThumbFinger1_L/Wrist_L/ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - ThumbFinger3_L/ThumbFinger2_L/ThumbFinger1_L/Wrist_L/ElbowPart1_L/Elbow_L/ShoulderPart1_L/Shoulder_L/Scapula_L/Chest_M/Spine2_M/Spine1_M/Root_M/DeformationSystem/character_animations_01
+    - Root_M/DeformationSystem/character_animations_01
+    - Hip_R/Root_M/DeformationSystem/character_animations_01
+    - HipPart1_R/Hip_R/Root_M/DeformationSystem/character_animations_01
+    - Knee_R/HipPart1_R/Hip_R/Root_M/DeformationSystem/character_animations_01
+    - KneePart1_R/Knee_R/HipPart1_R/Hip_R/Root_M/DeformationSystem/character_animations_01
+    - Ankle_R/KneePart1_R/Knee_R/HipPart1_R/Hip_R/Root_M/DeformationSystem/character_animations_01
+    - Toes_R/Ankle_R/KneePart1_R/Knee_R/HipPart1_R/Hip_R/Root_M/DeformationSystem/character_animations_01
+    - Root_M/DeformationSystem/character_animations_01
+    - Hip_L/Root_M/DeformationSystem/character_animations_01
+    - HipPart1_L/Hip_L/Root_M/DeformationSystem/character_animations_01
+    - Knee_L/HipPart1_L/Hip_L/Root_M/DeformationSystem/character_animations_01
+    - KneePart1_L/Knee_L/HipPart1_L/Hip_L/Root_M/DeformationSystem/character_animations_01
+    - Ankle_L/KneePart1_L/Knee_L/HipPart1_L/Hip_L/Root_M/DeformationSystem/character_animations_01
+    - Toes_L/Ankle_L/KneePart1_L/Knee_L/HipPart1_L/Hip_L/Root_M/DeformationSystem/character_animations_01
     RootBoneName: Root_M
+    SourceModelName: character_animations_01
     AttachBoneName: Root_M
     LocalPosition: {x: 0.5181814, y: -0.030561823, z: 0.0115534365}
     LocalRotation: {x: -0.51912653, y: 0.56408066, z: 0.44288725, w: 0.46494249}

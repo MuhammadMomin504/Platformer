@@ -56,15 +56,15 @@ namespace CharacterCustomisationPotionRush
             EnsureFolder(PrefabFolderPath);
             EnsureFolder(MeshFolderPath);
 
-            CharacterPropLibrary library = AssetDatabase.LoadAssetAtPath<CharacterPropLibrary>(LibraryAssetPath);
-            if (library == null)
-            {
-                library = ScriptableObject.CreateInstance<CharacterPropLibrary>();
-                AssetDatabase.CreateAsset(library, LibraryAssetPath);
-            }
+            CharacterPropLibrary library = LoadOrCreateLibrary();
 
             Undo.RecordObject(library, "Extract character props");
-            library.Props.Clear();
+
+            // Only this model's own entries are refreshed; clothing added from other models stays in the
+            // library so a re-extract never wipes the user's wardrobe.
+            library.Props.RemoveAll(entry => entry == null ||
+                                             string.IsNullOrEmpty(entry.SourceModelName) ||
+                                             entry.SourceModelName == sourceModel.name);
 
             HashSet<Transform> sourceBones = CollectBones(sourceModel);
             foreach (Transform prop in propRoots)
@@ -82,6 +82,7 @@ namespace CharacterCustomisationPotionRush
                     Name = prop.name,
                     Prefab = prefab,
                     AttachBoneName = anchor != null ? anchor.name : string.Empty,
+                    SourceModelName = sourceModel.name,
                     LocalPosition = offset.GetColumn(3),
                     LocalRotation = offset.rotation,
                     LocalScale = offset.lossyScale
@@ -90,53 +91,183 @@ namespace CharacterCustomisationPotionRush
 
             foreach (SkinnedMeshRenderer renderer in skinnedProps)
             {
-                Transform rootBone = renderer.rootBone != null
-                    ? renderer.rootBone
-                    : renderer.bones.FirstOrDefault(bone => bone != null);
-                if (rootBone == null)
+                CharacterPropLibraryEntry entry = BuildSkinnedEntry(renderer, sourceModel.name);
+                if (entry != null)
                 {
-                    Debug.LogWarning(string.Format(
-                        "Skipping skinned prop '{0}' because it has no root bone.",
-                        renderer.name), renderer);
-                    continue;
+                    library.Props.Add(entry);
                 }
-
-                string meshPath = string.Format(
-                    "{0}/{1}.asset",
-                    MeshFolderPath,
-                    MakeSafeFileName(renderer.sharedMesh.name));
-                Mesh meshAsset = SaveMeshAsset(renderer.sharedMesh, meshPath);
-                if (meshAsset == null)
-                {
-                    continue;
-                }
-
-                Matrix4x4 offset = rootBone.worldToLocalMatrix * renderer.transform.localToWorldMatrix;
-                library.Props.Add(new CharacterPropLibraryEntry
-                {
-                    Name = renderer.name,
-                    IsSkinnedMesh = true,
-                    SkinnedMesh = meshAsset,
-                    Materials = renderer.sharedMaterials,
-                    BoneNames = renderer.bones
-                        .Select(bone => bone != null ? bone.name : string.Empty)
-                        .ToArray(),
-                    RootBoneName = rootBone.name,
-                    AttachBoneName = rootBone.name,
-                    LocalPosition = offset.GetColumn(3),
-                    LocalRotation = offset.rotation,
-                    LocalScale = offset.lossyScale,
-                    LocalBounds = renderer.localBounds,
-                    Quality = renderer.quality,
-                    UpdateWhenOffscreen = renderer.updateWhenOffscreen,
-                    SkinnedMotionVectors = renderer.skinnedMotionVectors
-                });
             }
 
             EditorUtility.SetDirty(library);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             return library;
+        }
+
+        [MenuItem("Tools/Character Customisation Potion Rush/Add Clothing From Selected Model")]
+        private static void AddClothingFromSelection()
+        {
+            var model = Selection.activeObject as GameObject;
+            if (model == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Character Clothing",
+                    "Select a model or prefab that contains the garment's Skinned Mesh Renderer first.",
+                    "OK");
+                return;
+            }
+
+            CharacterPropLibrary library = AddSkinnedGarments(LoadOrCreateLibrary(), model);
+            if (library != null)
+            {
+                Selection.activeObject = library;
+                EditorGUIUtility.PingObject(library);
+            }
+        }
+
+        /// <summary>
+        /// Adds every skinned mesh of <paramref name="model"/> to the library as clothing, so a robe or any
+        /// other garment authored on its own rig can be offered alongside the rigid accessories. Existing
+        /// entries of the same name are refreshed rather than duplicated.
+        /// </summary>
+        public static CharacterPropLibrary AddSkinnedGarments(CharacterPropLibrary library, GameObject model)
+        {
+            if (model == null)
+            {
+                return library;
+            }
+
+            if (library == null)
+            {
+                library = LoadOrCreateLibrary();
+            }
+
+            List<SkinnedMeshRenderer> garments = model
+                .GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                .Where(renderer => renderer.sharedMesh != null)
+                .ToList();
+
+            if (garments.Count == 0)
+            {
+                EditorUtility.DisplayDialog(
+                    "Character Clothing",
+                    string.Format("'{0}' has no Skinned Mesh Renderer to add as clothing.", model.name),
+                    "OK");
+                return library;
+            }
+
+            EnsureFolder(LibraryFolderPath);
+            EnsureFolder(MeshFolderPath);
+
+            Undo.RecordObject(library, "Add character clothing");
+
+            foreach (SkinnedMeshRenderer renderer in garments)
+            {
+                CharacterPropLibraryEntry entry = BuildSkinnedEntry(renderer, model.name);
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                int existing = library.Props.FindIndex(p => p != null && p.Name == entry.Name);
+                if (existing >= 0)
+                {
+                    library.Props[existing] = entry;
+                }
+                else
+                {
+                    library.Props.Add(entry);
+                }
+            }
+
+            EditorUtility.SetDirty(library);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return library;
+        }
+
+        public static CharacterPropLibrary LoadOrCreateLibrary()
+        {
+            CharacterPropLibrary library = AssetDatabase.LoadAssetAtPath<CharacterPropLibrary>(LibraryAssetPath);
+            if (library != null)
+            {
+                return library;
+            }
+
+            EnsureFolder(LibraryFolderPath);
+            library = ScriptableObject.CreateInstance<CharacterPropLibrary>();
+            AssetDatabase.CreateAsset(library, LibraryAssetPath);
+            return library;
+        }
+
+        /// <summary>
+        /// Records everything needed to rebuild a garment on another skeleton: its mesh, materials, the
+        /// bone names it is skinned to and each bone's ancestor chain, plus where it sits relative to its
+        /// root bone so it lands in the right place on the body.
+        /// </summary>
+        private static CharacterPropLibraryEntry BuildSkinnedEntry(SkinnedMeshRenderer renderer, string sourceModelName)
+        {
+            Transform rootBone = renderer.rootBone != null
+                ? renderer.rootBone
+                : renderer.bones.FirstOrDefault(bone => bone != null);
+            if (rootBone == null)
+            {
+                Debug.LogWarning(string.Format(
+                    "Skipping skinned prop '{0}' because it has no root bone.",
+                    renderer.name), renderer);
+                return null;
+            }
+
+            string meshPath = string.Format(
+                "{0}/{1}.asset",
+                MeshFolderPath,
+                MakeSafeFileName(renderer.sharedMesh.name));
+            Mesh meshAsset = SaveMeshAsset(renderer.sharedMesh, meshPath);
+            if (meshAsset == null)
+            {
+                return null;
+            }
+
+            Matrix4x4 offset = rootBone.worldToLocalMatrix * renderer.transform.localToWorldMatrix;
+            return new CharacterPropLibraryEntry
+            {
+                Name = renderer.name,
+                IsSkinnedMesh = true,
+                SkinnedMesh = meshAsset,
+                Materials = renderer.sharedMaterials,
+                BoneNames = renderer.bones
+                    .Select(bone => bone != null ? bone.name : string.Empty)
+                    .ToArray(),
+                BoneParentNames = renderer.bones
+                    .Select(DescribeAncestors)
+                    .ToArray(),
+                RootBoneName = rootBone.name,
+                AttachBoneName = rootBone.name,
+                SourceModelName = sourceModelName,
+                LocalPosition = offset.GetColumn(3),
+                LocalRotation = offset.rotation,
+                LocalScale = offset.lossyScale,
+                LocalBounds = renderer.localBounds,
+                Quality = renderer.quality,
+                UpdateWhenOffscreen = renderer.updateWhenOffscreen,
+                SkinnedMotionVectors = renderer.skinnedMotionVectors
+            };
+        }
+
+        private static string DescribeAncestors(Transform bone)
+        {
+            if (bone == null)
+            {
+                return string.Empty;
+            }
+
+            var names = new List<string>();
+            for (Transform parent = bone.parent; parent != null; parent = parent.parent)
+            {
+                names.Add(parent.name);
+            }
+
+            return string.Join("/", names.ToArray());
         }
 
         private static HashSet<Transform> CollectBones(GameObject model)
