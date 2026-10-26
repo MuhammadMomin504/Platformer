@@ -524,12 +524,8 @@ namespace CharacterCustomisationPotionRush
 
             List<SkinnedMeshRenderer> targetRenderers = target.GetComponentsInChildren<SkinnedMeshRenderer>(true).ToList();
 
-            plan.Template = targetRenderers.FirstOrDefault();
             plan.SkeletonRoot = ResolveSkeletonRoot(target.transform, targetRenderers);
             plan.ModelSkeletonRoot = ResolveModelSkeletonRoot(model.transform, sourceRenderers);
-            plan.MeshParent = plan.Template != null && plan.Template.transform.parent != null
-                ? plan.Template.transform.parent
-                : target.transform;
 
             if (plan.SkeletonRoot == null)
             {
@@ -545,6 +541,14 @@ namespace CharacterCustomisationPotionRush
             List<SkinnedMeshRenderer> bodyRenderers = targetRenderers
                 .Where(r => !plan.Garments.Contains(r))
                 .ToList();
+
+            // New body parts go next to the existing ones. Taking a garment as the template would put them
+            // under a bone, and the next swap would then mistake them for clothing.
+            SkinnedMeshRenderer bodyTemplate = bodyRenderers.FirstOrDefault();
+            plan.Template = bodyTemplate ?? targetRenderers.FirstOrDefault();
+            plan.MeshParent = bodyTemplate != null && bodyTemplate.transform.parent != null
+                ? bodyTemplate.transform.parent
+                : target.transform;
 
             plan.Bones = new BoneMap(plan.SkeletonRoot, options.IgnoreBoneNamespace,
                 bodyRenderers.Count > 0 ? bodyRenderers : targetRenderers);
@@ -1193,6 +1197,9 @@ namespace CharacterCustomisationPotionRush
             garment.localScale = prop.LocalOffset.lossyScale;
 
             bool rebound;
+            string[] sourceBoneNames = (renderer.bones ?? Array.Empty<Transform>())
+                .Select(bone => bone != null ? bone.name : string.Empty)
+                .ToArray();
             Transform[] bones = ResolveGarmentBones(plan, renderer.bones, parent, out rebound);
 
             Transform rootBone = renderer.rootBone != null
@@ -1209,9 +1216,13 @@ namespace CharacterCustomisationPotionRush
             // rebaking them while the character is posed would bake that pose into the cloth.
             if (rebound || plan.EffectiveFit == RigFitMode.AdoptModelRestPose)
             {
-                renderer.sharedMesh = RebindMesh(plan, renderer.sharedMesh, bones, garment.localToWorldMatrix,
-                    options, generated);
-                result.MeshesRebaked++;
+                Mesh rebaked = RebindMesh(plan, renderer.sharedMesh, bones, sourceBoneNames,
+                    garment.localToWorldMatrix, options, generated);
+                if (rebaked != renderer.sharedMesh)
+                {
+                    renderer.sharedMesh = rebaked;
+                    result.MeshesRebaked++;
+                }
             }
 
             renderer.bones = bones;
@@ -1260,13 +1271,17 @@ namespace CharacterCustomisationPotionRush
         }
 
         /// <summary>
-        /// Copies a garment mesh and rebinds it to the given bones in their current rest pose, so the cloth
-        /// stays exactly where it is on the body while following the new skeleton from now on.
+        /// Binds a garment mesh to the given bones. A bone with the same name as the one the garment was
+        /// skinned to keeps its original bind pose, so the cloth sits on that bone exactly as authored and
+        /// follows the body the way the body mesh itself does. Only bones that fell back to an ancestor get
+        /// a new bind pose, measured where the mesh sat at bind time. Returns the source mesh untouched when
+        /// no bind pose had to change.
         /// </summary>
         private static Mesh RebindMesh(
             CharacterSwapPlan plan,
             Mesh source,
             Transform[] bones,
+            string[] sourceBoneNames,
             Matrix4x4 meshToWorld,
             CharacterSwapOptions options,
             List<KeyValuePair<Mesh, string>> generated)
@@ -1276,18 +1291,42 @@ namespace CharacterCustomisationPotionRush
                 return null;
             }
 
-            Mesh mesh = UnityEngine.Object.Instantiate(source);
-            mesh.name = string.Format("{0}__on_{1}", StripRebindSuffix(source.name), plan.Target.name);
-
             Matrix4x4[] bindposes = source.bindposes;
+            var keep = new bool[bindposes.Length];
+            bool changed = false;
             for (int i = 0; i < bindposes.Length; i++)
             {
-                if (i < bones.Length && bones[i] != null)
+                bool bound = i < bones.Length && bones[i] != null;
+                keep[i] = bound && sourceBoneNames != null && i < sourceBoneNames.Length &&
+                          bones[i].name == sourceBoneNames[i];
+                changed |= bound && !keep[i];
+            }
+
+            if (!changed)
+            {
+                return source;
+            }
+
+            // A kept bone pins down where the mesh sat at bind time, which a fallback bone is measured against.
+            for (int i = 0; i < bindposes.Length; i++)
+            {
+                if (keep[i])
+                {
+                    meshToWorld = bones[i].localToWorldMatrix * bindposes[i];
+                    break;
+                }
+            }
+
+            for (int i = 0; i < bindposes.Length; i++)
+            {
+                if (!keep[i] && i < bones.Length && bones[i] != null)
                 {
                     bindposes[i] = bones[i].worldToLocalMatrix * meshToWorld;
                 }
             }
 
+            Mesh mesh = UnityEngine.Object.Instantiate(source);
+            mesh.name = string.Format("{0}__on_{1}", StripRebindSuffix(source.name), plan.Target.name);
             mesh.bindposes = bindposes;
 
             generated.Add(new KeyValuePair<Mesh, string>(
@@ -1338,7 +1377,7 @@ namespace CharacterCustomisationPotionRush
             }
 
             Matrix4x4 meshToWorld = instance.transform.localToWorldMatrix;
-            Mesh mesh = RebindMesh(plan, entry.SkinnedMesh, bones, meshToWorld, options, generated);
+            Mesh mesh = RebindMesh(plan, entry.SkinnedMesh, bones, entry.BoneNames, meshToWorld, options, generated);
 
             renderer.sharedMesh = mesh;
             renderer.bones = bones;
@@ -1764,7 +1803,8 @@ namespace CharacterCustomisationPotionRush
 
         /// <summary>
         /// Turns the in-memory mesh into an asset. The renderer already points at this object, so the
-        /// reference survives and there is nothing to reassign.
+        /// reference survives and there is nothing to reassign. An earlier mesh at the same path is never
+        /// overwritten: undoing a swap restores renderers that still point at it, so it gets a unique name.
         /// </summary>
         private static void SaveGeneratedMesh(Mesh baked, string assetPath)
         {
@@ -1779,12 +1819,7 @@ namespace CharacterCustomisationPotionRush
                 return;
             }
 
-            if (AssetDatabase.LoadAssetAtPath<Mesh>(assetPath) != null)
-            {
-                AssetDatabase.DeleteAsset(assetPath);
-            }
-
-            AssetDatabase.CreateAsset(baked, assetPath);
+            AssetDatabase.CreateAsset(baked, AssetDatabase.GenerateUniqueAssetPath(assetPath));
         }
 
         private static string EnsureFolder(string folder)
