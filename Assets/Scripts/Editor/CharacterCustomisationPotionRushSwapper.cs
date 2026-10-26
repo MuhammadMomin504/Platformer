@@ -800,7 +800,10 @@ namespace CharacterCustomisationPotionRush
             CharacterSwapOptions options,
             CharacterPropLibrary propLibrary)
         {
-            Dictionary<string, GameObject> attached = FindAttachedProps(plan.SkeletonRoot);
+            IEnumerable<string> libraryPropNames = propLibrary != null && propLibrary.Props != null
+                ? propLibrary.Props.Where(entry => entry != null && !entry.IsSkinnedMesh).Select(entry => entry.Name)
+                : Enumerable.Empty<string>();
+            Dictionary<string, GameObject> attached = FindAttachedProps(plan.SkeletonRoot, libraryPropNames);
 
             // Garments already worn by the character count as attached props too, so they can be kept,
             // rebound to the new skeleton, or taken off from the same tick list as the rigid accessories.
@@ -1052,8 +1055,11 @@ namespace CharacterCustomisationPotionRush
         /// <summary>
         /// Accessories already hanging off the character's bones from a previous swap, keyed by name.
         /// Only bone children count, so unrelated scene objects under the character are left alone.
+        /// A library prop is matched by name first, because a prop built from several meshes has no mesh on
+        /// its root and would otherwise be seen as a handful of separate pieces.
         /// </summary>
-        private static Dictionary<string, GameObject> FindAttachedProps(Transform skeletonRoot)
+        private static Dictionary<string, GameObject> FindAttachedProps(
+            Transform skeletonRoot, IEnumerable<string> libraryPropNames)
         {
             var props = new Dictionary<string, GameObject>();
             if (skeletonRoot == null)
@@ -1061,9 +1067,22 @@ namespace CharacterCustomisationPotionRush
                 return props;
             }
 
-            foreach (Transform candidate in skeletonRoot.GetComponentsInChildren<Transform>(true))
+            var known = new HashSet<string>(libraryPropNames);
+            Transform[] candidates = skeletonRoot.GetComponentsInChildren<Transform>(true);
+            foreach (Transform candidate in candidates)
             {
-                if (!IsPropRoot(candidate, skeletonRoot) || props.ContainsKey(candidate.name))
+                if (known.Contains(candidate.name) && !props.ContainsKey(candidate.name) &&
+                    candidate.GetComponentInChildren<SkinnedMeshRenderer>(true) == null &&
+                    candidate.GetComponentInChildren<MeshRenderer>(true) != null)
+                {
+                    props.Add(candidate.name, candidate.gameObject);
+                }
+            }
+
+            foreach (Transform candidate in candidates)
+            {
+                if (!IsPropRoot(candidate, skeletonRoot) || props.ContainsKey(candidate.name) ||
+                    props.Values.Any(prop => candidate.IsChildOf(prop.transform)))
                 {
                     continue;
                 }
@@ -1123,6 +1142,28 @@ namespace CharacterCustomisationPotionRush
                     existing.localRotation = prop.LocalOffset.rotation;
                     existing.localScale = prop.LocalOffset.lossyScale;
                     SetLayerRecursively(prop.Existing, parent.gameObject.layer);
+
+                    result.PropsAttached++;
+                    continue;
+                }
+
+                // A prop the user added by hand is their own object, with whatever components and tweaks it
+                // carries, so it is kept and only follows its bone instead of being swapped for a prefab copy.
+                if (prop.Existing != null && prop.LibraryEntry != null &&
+                    prop.LibraryEntry.SourceModelName == CharacterCustomisationPotionRushPropExtractor.AddedPropSource)
+                {
+                    Transform existing = prop.Existing.transform;
+                    if (existing.parent != parent)
+                    {
+                        Vector3 localPosition = existing.localPosition;
+                        Quaternion localRotation = existing.localRotation;
+                        Vector3 localScale = existing.localScale;
+                        Undo.SetTransformParent(existing, parent, "Attach character prop");
+                        Undo.RecordObject(existing, "Attach character prop");
+                        existing.localPosition = localPosition;
+                        existing.localRotation = localRotation;
+                        existing.localScale = localScale;
+                    }
 
                     result.PropsAttached++;
                     continue;
@@ -1425,6 +1466,48 @@ namespace CharacterCustomisationPotionRush
         {
             int marker = meshName.IndexOf("__on_", StringComparison.Ordinal);
             return marker > 0 ? meshName.Substring(0, marker) : meshName;
+        }
+
+        /// <summary>
+        /// Puts a rigid library prop on the character's bone straight away, without a full swap. Returns the
+        /// prop's object on the bone, or null when the character has no bone of that name. A prop already
+        /// hanging off that bone under the same name is left as it is.
+        /// </summary>
+        public static GameObject AttachLibraryProp(
+            GameObject target, CharacterPropLibraryEntry entry, CharacterSwapOptions options)
+        {
+            if (target == null || entry == null || entry.IsSkinnedMesh || entry.Prefab == null)
+            {
+                return null;
+            }
+
+            List<SkinnedMeshRenderer> renderers = target.GetComponentsInChildren<SkinnedMeshRenderer>(true).ToList();
+            Transform skeleton = ResolveSkeletonRoot(target.transform, renderers);
+            Transform bone = skeleton != null
+                ? new BoneMap(skeleton, options.IgnoreBoneNamespace, renderers).Find(entry.AttachBoneName)
+                : null;
+            if (bone == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < bone.childCount; i++)
+            {
+                if (bone.GetChild(i).name == entry.Name)
+                {
+                    return bone.GetChild(i).gameObject;
+                }
+            }
+
+            var instance = (GameObject)UnityEngine.Object.Instantiate(entry.Prefab);
+            instance.name = entry.Name;
+            Undo.RegisterCreatedObjectUndo(instance, "Attach character prop");
+            instance.transform.SetParent(bone, false);
+            instance.transform.localPosition = entry.LocalPosition;
+            instance.transform.localRotation = entry.LocalRotation;
+            instance.transform.localScale = entry.LocalScale;
+            SetLayerRecursively(instance, bone.gameObject.layer);
+            return instance;
         }
 
         private static void SetLayerRecursively(GameObject root, int layer)

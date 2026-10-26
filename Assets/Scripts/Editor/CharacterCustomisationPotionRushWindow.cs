@@ -23,6 +23,9 @@ namespace CharacterCustomisationPotionRush
         [SerializeField] private bool _showOptions = true;
         [SerializeField] private bool _showProps = true;
         [SerializeField] private GameObject _clothingModel;
+        [SerializeField] private GameObject _newProp;
+        [SerializeField] private string _newPropBone = "Head_M";
+        private string _propStatus;
 
         private readonly List<GameObject> _library = new List<GameObject>();
         private CharacterSwapPlan _plan;
@@ -331,6 +334,7 @@ namespace CharacterCustomisationPotionRush
             }
 
             DrawClothingImport();
+            DrawPropImport();
 
             CharacterSwapPlan plan = CurrentPlan();
             if (plan.Props.Count == 0)
@@ -411,6 +415,210 @@ namespace CharacterCustomisationPotionRush
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Picks a rigid accessory that no model carries, such as a ball or a staff, and the bone it goes on.
+        /// Nothing changes until Apply Swap, which makes the object a child of that bone.
+        /// </summary>
+        private void DrawPropImport()
+        {
+            EditorGUI.BeginChangeCheck();
+            _newProp = (GameObject)EditorGUILayout.ObjectField(
+                new GUIContent("Add prop", "A scene object, prefab or model with Mesh Renderers, for example a ball. Choose the bone it goes on, then click Apply Swap to make it a child of that bone."),
+                _newProp, typeof(GameObject), true);
+            if (EditorGUI.EndChangeCheck())
+            {
+                _propStatus = null;
+                SuggestBone();
+            }
+
+            if (_newProp == null)
+            {
+                if (!string.IsNullOrEmpty(_propStatus))
+                {
+                    EditorGUILayout.HelpBox(_propStatus, MessageType.Info);
+                }
+
+                return;
+            }
+
+            using (new EditorGUI.IndentLevelScope())
+            {
+                List<string> bones = TargetBoneNames();
+                if (bones.Count == 0)
+                {
+                    EditorGUILayout.HelpBox("Pick a target character to choose the bone this prop goes on.", MessageType.Warning);
+                    return;
+                }
+
+                int index = Mathf.Max(0, bones.IndexOf(_newPropBone));
+                index = EditorGUILayout.Popup(
+                    new GUIContent("Attach to bone", "The bone the prop becomes a child of and follows during animation."),
+                    index, bones.ToArray());
+                _newPropBone = bones[index];
+
+                EditorGUILayout.HelpBox(
+                    string.Format(
+                        EditorUtility.IsPersistent(_newProp)
+                            ? "Click Apply Swap to put '{0}' on {1}."
+                            : "Click Apply Swap to make '{0}' a child of {1}. It keeps the place you gave it in the Scene view.",
+                        _newProp.name, _newPropBone),
+                    MessageType.Info);
+            }
+        }
+
+        /// <summary>
+        /// Puts the prop picked in "Add prop" on its bone. A scene object becomes a child of the bone where it
+        /// stands; a prefab or model is placed at the bone. Either way it is recorded in the library and ticked,
+        /// so later swaps keep it. Returns whether a prop was attached.
+        /// </summary>
+        private bool AttachPendingProp()
+        {
+            if (_newProp == null || _target == null)
+            {
+                return false;
+            }
+
+            HashSet<Transform> bones = TargetBones();
+            Transform bone = bones.FirstOrDefault(b => b.name == _newPropBone);
+            if (bone == null)
+            {
+                _propStatus = string.Format("'{0}' has no bone called '{1}'.", _target.name, _newPropBone);
+                return false;
+            }
+
+            string propName = _newProp.name;
+            bool inScene = !EditorUtility.IsPersistent(_newProp);
+
+            // Adding a prop again replaces the one of the same name the character already wears.
+            foreach (Transform worn in _target.GetComponentsInChildren<Transform>(true)
+                         .Where(t => t.name == propName && t.gameObject != _newProp && t.parent != null && bones.Contains(t.parent))
+                         .ToList())
+            {
+                Undo.DestroyObjectImmediate(worn.gameObject);
+            }
+            if (inScene && _newProp.transform.parent != bone)
+            {
+                Undo.SetTransformParent(_newProp.transform, bone, "Attach character prop");
+            }
+
+            Transform placement = _newProp.transform;
+            CharacterPropLibrary library = CharacterCustomisationPotionRushPropExtractor.AddRigidProp(
+                _propLibrary, _newProp, bone.name,
+                inScene ? placement.localPosition : Vector3.zero,
+                inScene ? placement.localRotation : Quaternion.identity,
+                placement.localScale);
+            CharacterPropLibraryEntry entry = library != null
+                ? library.Props.FirstOrDefault(p => p != null && p.Name == propName && !p.IsSkinnedMesh)
+                : null;
+            if (entry == null)
+            {
+                return false;
+            }
+
+            _propLibrary = library;
+            _options.SetPropSelected(propName, true);
+            if (!inScene)
+            {
+                CharacterCustomisationPotionRushSwapper.AttachLibraryProp(_target, entry, _options);
+            }
+
+            EditorSceneManager.MarkSceneDirty(_target.scene);
+            _propStatus = string.Format("'{0}' is now a child of {1} on '{2}'.", propName, bone.name, _target.name);
+            _newProp = null;
+            _plan = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Starts the bone choice on the bone nearest to where a scene object stands, or on its own bone when it
+        /// is already parented to one. The choice can still be changed before Apply Swap.
+        /// </summary>
+        private void SuggestBone()
+        {
+            if (_newProp == null || EditorUtility.IsPersistent(_newProp) || _target == null)
+            {
+                return;
+            }
+
+            HashSet<Transform> bones = TargetBones();
+            Transform parent = _newProp.transform.parent;
+            Transform suggested = parent != null && bones.Contains(parent) ? parent : NearestBone(_newProp, bones);
+            if (suggested != null)
+            {
+                _newPropBone = suggested.name;
+            }
+        }
+
+        /// <summary>
+        /// The bone closest to the object, or null when the object is not on the character at all. Finger, toe
+        /// and end bones give way to the hand or foot they belong to, so a held prop does not wobble with a
+        /// curling finger.
+        /// </summary>
+        private Transform NearestBone(GameObject prop, HashSet<Transform> bones)
+        {
+            Renderer[] propRenderers = prop.GetComponentsInChildren<Renderer>(true);
+            SkinnedMeshRenderer[] body = _target.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            if (propRenderers.Length == 0 || body.Length == 0 || bones.Count == 0)
+            {
+                return null;
+            }
+
+            Bounds propBounds = propRenderers[0].bounds;
+            foreach (Renderer renderer in propRenderers)
+            {
+                propBounds.Encapsulate(renderer.bounds);
+            }
+
+            Bounds bodyBounds = body[0].bounds;
+            foreach (SkinnedMeshRenderer renderer in body)
+            {
+                bodyBounds.Encapsulate(renderer.bounds);
+            }
+
+            Vector3 centre = propBounds.center;
+            if (!bodyBounds.Intersects(propBounds))
+            {
+                return null;
+            }
+
+            Transform nearest = bones.OrderBy(bone => Vector3.Distance(bone.position, centre)).First();
+            while (IsDigitBone(nearest.name) && nearest.parent != null && bones.Contains(nearest.parent))
+            {
+                nearest = nearest.parent;
+            }
+
+            return nearest;
+        }
+
+        private static bool IsDigitBone(string boneName)
+        {
+            string name = boneName.ToLowerInvariant();
+            return new[] { "finger", "thumb", "index", "middle", "ring", "pinky", "toe", "end" }
+                .Any(token => name.Contains(token));
+        }
+
+        private HashSet<Transform> TargetBones()
+        {
+            if (_target == null)
+            {
+                return new HashSet<Transform>();
+            }
+
+            var renderers = _target.GetComponentsInChildren<SkinnedMeshRenderer>(true).ToList();
+            var bones = new HashSet<Transform>(renderers.SelectMany(r => r.bones ?? new Transform[0]).Where(b => b != null));
+            foreach (SkinnedMeshRenderer renderer in renderers.Where(r => r.rootBone != null))
+            {
+                bones.Add(renderer.rootBone);
+            }
+
+            return bones;
+        }
+
+        private List<string> TargetBoneNames()
+        {
+            return TargetBones().Select(b => b.name).Distinct().OrderBy(n => n).ToList();
         }
 
         private static string DescribeProp(PropSwapPlan prop)
@@ -529,7 +737,8 @@ namespace CharacterCustomisationPotionRush
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                using (new EditorGUI.DisabledScope(!plan.CanApply))
+                bool propPending = _newProp != null && _target != null;
+                using (new EditorGUI.DisabledScope(!plan.CanApply && !propPending))
                 {
                     if (GUILayout.Button("Apply Swap", GUILayout.Height(28f)))
                     {
@@ -566,10 +775,20 @@ namespace CharacterCustomisationPotionRush
 
         private void ApplySwap()
         {
+            // The prop picked in "Add prop" goes on first, so the swap sees it as worn and keeps it. With no
+            // model picked, Apply Swap only attaches the prop.
+            bool propAttached = AttachPendingProp();
+
             _plan = CharacterCustomisationPotionRushSwapper.BuildPlan(
                 _target, _model, _options, _propLibrary);
             if (!_plan.CanApply)
             {
+                if (propAttached)
+                {
+                    _plan = null;
+                    SceneView.RepaintAll();
+                }
+
                 return;
             }
 

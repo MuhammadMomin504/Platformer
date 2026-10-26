@@ -15,6 +15,11 @@ namespace CharacterCustomisationPotionRush
         public const string MeshFolderPath = LibraryFolderPath + "/Meshes";
         public const string LibraryAssetPath = LibraryFolderPath + "/CharacterCustomisationPotionRushPropLibrary.asset";
 
+        /// <summary>
+        /// Source recorded for props added by hand, so re-extracting the reference model never removes them.
+        /// </summary>
+        public const string AddedPropSource = "Added prop";
+
         [MenuItem("Tools/Character Customisation Potion Rush/Extract Props From Reference FBX")]
         public static void ExtractFromReferenceFbx()
         {
@@ -183,6 +188,87 @@ namespace CharacterCustomisationPotionRush
             EditorUtility.SetDirty(library);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            return library;
+        }
+
+        /// <summary>
+        /// Adds a rigid accessory that no model carries (a staff, glasses, wings...) to the library. It is saved
+        /// as its own prefab and attached to <paramref name="boneName"/> at the given offset whenever it is ticked.
+        /// An existing entry of the same name is replaced.
+        /// </summary>
+        public static CharacterPropLibrary AddRigidProp(
+            CharacterPropLibrary library,
+            GameObject source,
+            string boneName,
+            Vector3 localPosition,
+            Quaternion localRotation,
+            Vector3 localScale)
+        {
+            if (source == null || string.IsNullOrEmpty(boneName))
+            {
+                return library;
+            }
+
+            if (source.GetComponentInChildren<SkinnedMeshRenderer>(true) != null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Character Prop",
+                    string.Format("'{0}' is skinned. Use 'Add clothing' for garments that deform with the body.", source.name),
+                    "OK");
+                return library;
+            }
+
+            bool hasMesh = source.GetComponentsInChildren<MeshFilter>(true)
+                .Any(filter => filter.sharedMesh != null && filter.GetComponent<MeshRenderer>() != null);
+            if (!hasMesh)
+            {
+                EditorUtility.DisplayDialog(
+                    "Character Prop",
+                    string.Format("'{0}' has no Mesh Renderer to add as a prop.", source.name),
+                    "OK");
+                return library;
+            }
+
+            if (library == null)
+            {
+                library = LoadOrCreateLibrary();
+            }
+
+            EnsureFolder(LibraryFolderPath);
+            EnsureFolder(PrefabFolderPath);
+
+            string prefabPath = string.Format("{0}/{1}.prefab", PrefabFolderPath, MakeSafeFileName(source.name));
+            GameObject prefab = SavePropPrefab(source.transform, prefabPath);
+            if (prefab == null)
+            {
+                return library;
+            }
+
+            Undo.RecordObject(library, "Add character prop");
+
+            var entry = new CharacterPropLibraryEntry
+            {
+                Name = source.name,
+                Prefab = prefab,
+                AttachBoneName = boneName,
+                SourceModelName = AddedPropSource,
+                LocalPosition = localPosition,
+                LocalRotation = localRotation,
+                LocalScale = localScale
+            };
+
+            int existing = library.Props.FindIndex(p => p != null && p.Name == entry.Name);
+            if (existing >= 0)
+            {
+                library.Props[existing] = entry;
+            }
+            else
+            {
+                library.Props.Add(entry);
+            }
+
+            EditorUtility.SetDirty(library);
+            AssetDatabase.SaveAssets();
             return library;
         }
 
