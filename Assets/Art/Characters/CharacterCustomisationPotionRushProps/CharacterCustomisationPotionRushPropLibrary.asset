@@ -281,3 +281,60 @@ MonoBehaviour:
     Quality: 0
     UpdateWhenOffscreen: 0
     SkinnedMotionVectors: 1
+  - Name: WizardStaff
+    Prefab: {fileID: 2030110514194178753, guid: 89f084e9ee0d6dc4cb7984db6c2ca899, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    BoneParentNames: []
+    RootBoneName: 
+    SourceModelName: Added prop
+    AttachBoneName: Wrist_R
+    LocalPosition: {x: 0, y: 0, z: 0}
+    LocalRotation: {x: 0.48412555, y: 0.8614666, z: -0.03479367, w: 0.14928861}
+    LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: Ball
+    Prefab: {fileID: 9196329492917005872, guid: 09c96dbc8a70a3948ad9fae3888314dc, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    BoneParentNames: []
+    RootBoneName: 
+    SourceModelName: Added prop
+    AttachBoneName: Wrist_R
+    LocalPosition: {x: -0.087569505, y: 0.021389686, z: -0.08061493}
+    LocalRotation: {x: 0.48404503, y: 0.8615833, z: -0.03475376, w: 0.14888504}
+    LocalScale: {x: 0.10682711, y: 0.10682712, z: 0.10682714}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
+  - Name: rr
+    Prefab: {fileID: 5348862146512138404, guid: 5c441751348c0df4e98a5a8278c8f242, type: 3}
+    IsSkinnedMesh: 0
+    SkinnedMesh: {fileID: 0}
+    Materials: []
+    BoneNames: []
+    BoneParentNames: []
+    RootBoneName: 
+    SourceModelName: Added prop
+    AttachBoneName: ShoulderPart1_R
+    LocalPosition: {x: 0.17823559, y: 0.121133074, z: -0.8153325}
+    LocalRotation: {x: -0.81565505, y: -0.5207067, z: -0.113083884, w: -0.22535183}
+    LocalScale: {x: 0.11684104, y: 0.116841055, z: 0.116841026}
+    LocalBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+    Quality: 0
+    UpdateWhenOffscreen: 0
+    SkinnedMotionVectors: 1
